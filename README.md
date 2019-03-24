@@ -4,7 +4,7 @@ ISDA_Clib.dll is the x64 windows DLL built from ISDA C sources, you must use 64-
 
 c_interface.py contains the ctypes function and type declarations to the functions exported from the above dll
 
-cds_trade.py is where you define your CDS deal attributes
+cds_trade.py is where you define your CDS deal attributes and the par spreads for that refob for that date
 
 isda_model.py calls functions from c_interface.py
 
