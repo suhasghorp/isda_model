@@ -22,12 +22,12 @@ cds = CDSTrade(trade_date=trade_date,
 market = Market_Data(value_date)
 model = ISDAModel(cds, market)
 valuation = model.single_name_pricer()
-print('clean_pv:{0}'.format(valuation['clean_pv']))
-print('dirty_pv:{0}'.format(valuation['dirty_pv']))
-print('accrued_premium:{0}'.format(valuation['accrued_premium']))
-print('days_accrued:{0}'.format(valuation['days_accrued']))
-print('cs01:{0}'.format(valuation['cs01']))
-print('dv01:{0}'.format(valuation['dv01']))
+print('clean_pv:{}'.format(valuation['clean_pv']))
+print('dirty_pv:{}'.format(valuation['dirty_pv']))
+print('accrued_premium:{}'.format(valuation['accrued_premium']))
+print('days_accrued:{}'.format(valuation['days_accrued']))
+print('cs01:{}'.format(valuation['cs01']))
+print('dv01:{}'.format(valuation['dv01']))
 
 ''' =============  RESULTS ===============
 Date:b'20190321', Disc factor:1.0
