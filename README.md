@@ -1,6 +1,6 @@
 ## Python CTypes Interface to ISDA CDS model
 
-ISDA_Clib.dll is the x64 windows DLL built from ISDA C sources
+ISDA_Clib.dll is the x64 windows DLL built from ISDA C sources, you must use 64-bit python 3.x
 
 c_interface.py contains the ctypes function and type declarations to the functions exported from the above dll
 
