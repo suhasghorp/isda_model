@@ -426,7 +426,7 @@ class CInterface:
     def JpmcdsZeroPrice(self, creditCurve, date):
       func = self.dll.JpmcdsZeroPrice
       func.argtypes = [POINTER(TCurve), c_int]
-      func.restype = c_float
+      func.restype = c_double
       return func(creditCurve,date)
 
     #C signature
@@ -470,6 +470,30 @@ class CInterface:
       return func(today, settlementDate, startDate1, stepinDate, startDate2, maturityDate, coupon,
         payAccruedOnDefault, couponInterval, stub, accrueDCC, badDayConv, calendar.encode('utf-8'), discCurve, oneSpread, recoveryRate,
         payAccruedAtStart, upfrontCharge)
+
+    #C signature
+    '''TDateList* JpmcdsNewDateList(
+    TDate startDate,                    /* (I) Start Date */
+    TDate maturityDate,                 /* (I) Maturity Date */
+    TDateInterval *interval,            /* (I) Increment */
+    TBoolean stubAtEnd)                 /* (I) T=Stub at end; F=Stub at beg. */'''
+
+    def JpmcdsNewDateList(self, startDate, maturityDate, interval, stubAtEnd):
+        func = self.dll.JpmcdsNewDateList
+        func.argtypes = [c_int, c_int, POINTER(TDateInterval),c_int]
+        func.restype = POINTER(TDateList)
+        return func(startDate,maturityDate,interval,stubAtEnd)
+
+    #C signature
+    '''int JpmcdsDateToMDY
+    (TDate         date,                /* (I) Days since 1/1/BASE_YEAR. */
+     TMonthDayYear *mdy)                /* (O) Month/Day/Year format */'''
+
+    def JpmcdsDateToMDY(self, jpmDate):
+        func = self.dll.JpmcdsDateToMDY
+        func.argtypes = [c_int]
+        func.restype = POINTER(TMonthDayYear)
+        return func(jpmDate)
 
 
 class TRatePt(Structure):
@@ -555,5 +579,18 @@ class TFeeLeg(Structure):
         ('dcc', c_long),
         ('accrualPayConv', c_int),
         ('obsStartOfDay', c_int)
+    ]
+
+class TDateList(Structure):
+    _fields_ = [
+        ('fNumItems', c_int),
+        ('fArray', POINTER(c_int))
+    ]
+
+class TMonthDayYear(Structure):
+    _fields_ = [
+        ('month', c_long),
+        ('day', c_long),
+        ('year', c_long)
     ]
 
