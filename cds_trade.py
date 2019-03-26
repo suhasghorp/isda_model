@@ -37,15 +37,17 @@ class CDSTrade:
         self.recovery_rate = kwargs['recovery_rate']
         self.notional = kwargs['notional']
 
-        self.refob = 'F-MotCrLLC-291446' #calypso id 664070
+        self.refob = 'TARGET CORP' #calypso id 664070
 
         '''SELECT * FROM
         MKT_DATA.MARKIT_SPREADS
         where
         record_date = '21-mar-2019'
-        and red_code = '3H994Q' and docclause = 'XR14'''
+        and red_code = '8FD73G' and docclause = 'XR14'''
 
-        self.credit_spreads = [0.00358583,0.00595207,0.01110475,0.01630278,0.01997051,0.02382577,0.02942789,0.03206014,0.03333116,0.03409458,0.03366465]
+        #self.credit_spreads = [0.00358583,0.00595207,0.01110475,0.01630278,0.01997051,0.02382577,0.02942789,0.03206014,0.03333116,0.03409458,0.03366465]
+
+        self.credit_spreads = [0.00064278,0.0007136,0.00127052,0.00202109,0.00288513,0.00401699,0.00803556, 0.00988759]
 
         #self.credit_spreads = [0.00081, 0.0009, 0.00181, 0.00293, 0.00439, 0.00613, 0.00923, 0.01119]
 
@@ -53,7 +55,7 @@ class CDSTrade:
 
         self.credit_spreads_cs01 = [s + self.single_basis_point for s in self.credit_spreads]
 
-        self.credit_spread_tenors = ['6M', '1Y', '2Y', '3Y', '4Y', '5Y', '7Y', '10Y', '15Y', '20Y', '30Y']
+        self.credit_spread_tenors = ['6M', '1Y', '2Y', '3Y', '4Y', '5Y', '10Y', '30Y']
 
         if len(self.credit_spreads) != len(self.credit_spread_tenors):
             raise ValueError('CDS Trade - credit spread tenors and spreads do not match')

@@ -1,7 +1,7 @@
 from ctypes import *
 from isda.c_interface import *
 from isda.utils import *
-from datetime import datetime
+import datetime as dt
 
 
 class ISDAModel:
@@ -76,7 +76,7 @@ class ISDAModel:
         return zero_curve[0], adv_dates[-1]
 
     def ymd_to_jpm_date(self, ymd):
-        dt = datetime.strptime(ymd,'%m/%d/%Y').date()
+        dt = datetime.datetime.strptime(ymd,'%m/%d/%Y').date()
         return self.c_interface.JpmcdsDate(dt.year, dt.month,dt.day)
 
     def print_discount_factors(self, start_date, end_date, zero_curve):
@@ -88,19 +88,36 @@ class ISDAModel:
             print('Date:{}, Disc factor:{}'.format(self.c_interface.JpmcdsFormatDate(dt),
                                                    self.c_interface.JpmcdsZeroPrice(zero_curve, dt)))
 
-    def print_surv_probability(self, start_date,end_date, credit_curve):
+    def print_curves(self, zero_curve, credit_curve):
+        base_date = credit_curve.fBaseDate
+        print('Date:{}, Discount Factor:{}, Survival Probability:{}'.format(self.c_interface.JpmcdsFormatDate(base_date),
+                                                                            self.c_interface.JpmcdsZeroPrice(zero_curve,base_date),
+                                                                            self.c_interface.JpmcdsZeroPrice(credit_curve, base_date)))
+        for i in range(credit_curve.fNumItems):
+            dt = credit_curve.fArray[i].fDate
+            print('Date:{}, Discount Factor:{}, Survival Probability:{}'.format(self.c_interface.JpmcdsFormatDate(dt),
+                                                                                self.c_interface.JpmcdsZeroPrice(zero_curve, dt),
+                                                                                self.c_interface.JpmcdsZeroPrice(credit_curve, dt)))
+
         three_month_interval = TDateInterval()
         self.c_interface.JpmcdsStringToDateInterval('3M', 'test', three_month_interval)
-        date_list = self.c_interface.JpmcdsNewDateList(start_date, end_date, three_month_interval, 0)
-        for i in range(date_list[0].fNumItems):
-            dt = date_list[0].fArray[i]
-            print('Date:{}, Survival Probability:{}'.format(self.c_interface.JpmcdsFormatDate(dt),
-                                                            self.c_interface.JpmcdsZeroPrice(credit_curve, dt)))
+        stubFS = TStubMethod(False, False)
+        ret = self.c_interface.JpmcdsStringToStubMethod('F/S', byref(stubFS))
+        type = (c_long * 1)()
+        self.c_interface.JpmcdsStringToDayCountConv('Act/360', type)
+        paymentDCC = type[0]
+        bad_day_conv_following = ord('F')
+        cashFlows = self.c_interface.JpmcdsCdsFeeLegFlows(self.cds.accrual_start_date, self.cds.maturity_date, three_month_interval, stubFS, self.cds.notional, self.cds.running_coupon,
+                                         paymentDCC, bad_day_conv_following, 'none')
+        for i in range(cashFlows[0].fNumItems):
+            date = cashFlows[0].fArray[i].fDate
+            amount = cashFlows[0].fArray[i].fAmount
+            print('Date:%s, CashFlow:%s' % (self.c_interface.JpmcdsFormatDate(date), amount))
 
     def buildCreditCurve(self, zero_curve, shift=None):
 
         valuation_date = self.py_to_jpm_date(self.market.valuation_date)
-        future_imm_dates = Utils.imm_date_vector(datetime.combine(self.market.valuation_date, datetime.min.time()), tenor_list=[0.5, 1, 2, 3, 4, 5, 7, 10])
+        future_imm_dates = Utils.imm_date_vector(dt.datetime.combine(self.market.valuation_date, dt.datetime.min.time()), tenor_list=self.cds.credit_spread_tenors)
         jpm_imm_dates = [self.ymd_to_jpm_date(dt[1]) for dt in future_imm_dates]
         tenors = (c_int * len(jpm_imm_dates))(*jpm_imm_dates)
 
@@ -162,7 +179,7 @@ class ISDAModel:
 
         return credit_curve[0],jpm_imm_dates[-1]
 
-    def calc_cds_price(self, zero_curve, credit_curve, is_clean):
+    def calc_cds_price(self, coupon, zero_curve, credit_curve, is_clean):
 
         valuation_date = self.py_to_jpm_date(self.market.valuation_date)
 
@@ -195,8 +212,9 @@ class ISDAModel:
             cash_settle_date[0],
             step_in_date[0],
             self.cds.accrual_start_date,
+            #self.py_to_jpm_date(datetime.date(2019, 3, 21)),
             self.cds.maturity_date,
-            self.cds.running_coupon / 10000.,
+            coupon / 10000.,
             pay_accrual_on_default,
             coupon_interval,
             self.stubFS,
@@ -208,7 +226,7 @@ class ISDAModel:
             self.cds.recovery_rate,
             is_price_clean,
             cdsprice)
-
+        print('Coupon:{}, cdsprice:{}'.format(coupon, cdsprice[0] * -1.0))
         return cdsprice[0] * -1.0
 
     def get_upfront_charge(self, running_coupon):
@@ -273,29 +291,34 @@ class ISDAModel:
         self.cds.clean_price = (self.cds.notional - self.cds.upfront_charge - self.cds.accrued_premium) / self.cds.notional * 100.
         print('Clean Price: %s' % self.cds.clean_price)
 
+
+
     def py_to_jpm_date(self,pydate):
         return self.c_interface.JpmcdsDate(pydate.year, pydate.month,pydate.day)
 
     def single_name_pricer(self):
 
         zero_curve, last_date = self.buildZeroCurve(shift=None)
-        self.print_discount_factors(self.py_to_jpm_date(self.market.valuation_date), last_date, zero_curve)
         credit_curve, last_date = self.buildCreditCurve(zero_curve, shift=None)
-        self.print_surv_probability(self.py_to_jpm_date(self.market.valuation_date), last_date, credit_curve)
-        clean_price = self.calc_cds_price(zero_curve, credit_curve, is_clean=True)
-        dirty_price = self.calc_cds_price(zero_curve, credit_curve, is_clean=False)
+        self.print_curves(zero_curve, credit_curve)
+
+        clean_price = self.calc_cds_price(self.cds.running_coupon, zero_curve, credit_curve, is_clean=True)
+        dirty_price = self.calc_cds_price(self.cds.running_coupon, zero_curve, credit_curve, is_clean=False)
         clean_pv = clean_price * self.cds.notional * self.cds.credit_risk_direction_scale_factor
         dirty_pv = dirty_price * self.cds.notional * self.cds.credit_risk_direction_scale_factor
         accrued_premium = (dirty_price - clean_price) * self.cds.notional
         days_accrued = accrued_premium * (360. / self.cds.running_coupon) / self.cds.notional
 
+
         zero_curve_shifted, last_date = self.buildZeroCurve(shift=0.0001)
         credit_curve_shifted, last_date = self.buildCreditCurve(zero_curve_shifted, shift=0.0001)
 
-        dirty_price_shifted_cs01 = self.calc_cds_price(zero_curve, credit_curve_shifted, is_clean=False)
+        dirty_price_shifted_cs01 = self.calc_cds_price(self.cds.running_coupon, zero_curve, credit_curve_shifted, is_clean=False)
         cs01 = (dirty_price_shifted_cs01 - dirty_price) * self.cds.notional * self.cds.credit_risk_direction_scale_factor
 
-        dirty_price_shifted_dv01 = self.calc_cds_price(zero_curve_shifted, credit_curve, is_clean=False)
+        dirty_price_shifted_dv01 = self.calc_cds_price(self.cds.running_coupon, zero_curve_shifted, credit_curve, is_clean=False)
         dv01 = (dirty_price_shifted_dv01 - dirty_price) * self.cds.notional * self.cds.credit_risk_direction_scale_factor
 
-        return {'clean_pv' : clean_pv, 'dirty_pv' : dirty_pv, 'accrued_premium' : accrued_premium, 'days_accrued' : days_accrued, 'cs01' : cs01, 'dv01' : dv01}
+        return {'clean_price' : clean_price, 'dirty_price' : dirty_price, 'clean_pv' : clean_pv, 'dirty_pv' : dirty_pv, 'accrued_premium' : accrued_premium, 'days_accrued' : days_accrued, 'cs01' : cs01, 'dv01' : dv01}
+
+

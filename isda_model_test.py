@@ -4,17 +4,18 @@ from isda.market_data import *
 import datetime
 
 
-value_date = datetime.date(2019, 3, 21)
-trade_date = datetime.date(2016, 5, 5)
-effective_date = datetime.date(2016, 5, 6)
-accrual_start_date = datetime.date(2016, 3, 20)
-maturity_date = datetime.date(2019, 6, 20)
+# calypso id 751320
+value_date = datetime.date(2019, 3, 25)
+trade_date = datetime.date(2017, 5, 23)
+effective_date = datetime.date(2017, 5, 24)
+accrual_start_date = datetime.date(2019, 3, 20)
+maturity_date = datetime.date(2022, 6, 20)
 
 cds = CDSTrade(trade_date=trade_date,
                effective_date=effective_date,
                accrual_start_date=accrual_start_date,
                maturity_date=maturity_date,
-               running_coupon=500.,
+               running_coupon=100.,
                recovery_rate=0.4,
                is_buy_protection=False,
                notional=10000000.)
@@ -22,6 +23,8 @@ cds = CDSTrade(trade_date=trade_date,
 market = Market_Data(value_date)
 model = ISDAModel(cds, market)
 valuation = model.single_name_pricer()
+print('clean_price:{}'.format(valuation['clean_price']))
+print('clean_pv:{}'.format(valuation['clean_pv']))
 print('clean_pv:{}'.format(valuation['clean_pv']))
 print('dirty_pv:{}'.format(valuation['dirty_pv']))
 print('accrued_premium:{}'.format(valuation['accrued_premium']))

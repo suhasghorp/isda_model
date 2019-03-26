@@ -54,27 +54,12 @@ class Utils:
         # adjust day for day of week? Modified Following
         return datetime.datetime(s_date.year, s_date.month, imm_day_of_month)
 
-    def imm_date_vector(start_date,
-                        tenor_list=[0.5, 1, 2, 3, 4, 5, 7, 10, 15, 20, 30],
-                        format='%m/%d/%Y'):
-        """
-        potentially multiple rolldates in each tenor year;
+    def imm_date_vector(start_date,tenor_list, format='%m/%d/%Y'):
 
-        a) which potential roll date in each year is closest.
-        b) means generating for each tenor all 4 roll dates, then adjust these for weekend
-        c) then filter each based on the closest to the
-
-        d) build the following structure
-        (cob_date, tenor, target_date, (tuple of potential dates))
-
-        :param start_date:
-        :param tenor_list:
-        :return:
-        """
-
+        tenors = [float(x[:-1])/12 if x[-1] == 'M' else float(x[:-1]) for x in tenor_list]
         # need a better date add that knows which month?
         return [(x, Utils.next_imm(Utils.move_n_months(start_date, 0, (6 if x == 0.5 else x * 12)))) for x in
-                tenor_list] if format == '' \
+                tenors] if format == '' \
             else [('{0}{1}'.format((6 if x == 0.5 else x), ('Y' if x >= 1 else 'M')),
                    Utils.next_imm(Utils.move_n_months(start_date, 0, (6 if x == 0.5 else x * 12))).strftime(format)) for x in
-                  tenor_list]
+                  tenors]

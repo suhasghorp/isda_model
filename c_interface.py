@@ -489,11 +489,11 @@ class CInterface:
     (TDate         date,                /* (I) Days since 1/1/BASE_YEAR. */
      TMonthDayYear *mdy)                /* (O) Month/Day/Year format */'''
 
-    def JpmcdsDateToMDY(self, jpmDate):
+    def JpmcdsDateToMDY(self, jpmDate, mdy):
         func = self.dll.JpmcdsDateToMDY
-        func.argtypes = [c_int]
-        func.restype = POINTER(TMonthDayYear)
-        return func(jpmDate)
+        func.argtypes = [c_int, POINTER(TMonthDayYear)]
+        func.restype = c_int
+        return func(jpmDate, mdy)
 
 
 class TRatePt(Structure):
