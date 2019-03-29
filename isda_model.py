@@ -79,15 +79,6 @@ class ISDAModel:
         dt = datetime.datetime.strptime(ymd,'%m/%d/%Y').date()
         return self.c_interface.JpmcdsDate(dt.year, dt.month,dt.day)
 
-    def print_discount_factors(self, start_date, end_date, zero_curve):
-        three_month_interval = TDateInterval()
-        self.c_interface.JpmcdsStringToDateInterval('3M', 'test', three_month_interval)
-        date_list = self.c_interface.JpmcdsNewDateList(start_date, end_date,three_month_interval, 0)
-        for i in range(date_list[0].fNumItems):
-            dt = date_list[0].fArray[i]
-            print('Date:{}, Disc factor:{}'.format(self.c_interface.JpmcdsFormatDate(dt),
-                                                   self.c_interface.JpmcdsZeroPrice(zero_curve, dt)))
-
     def print_curves(self, zero_curve, credit_curve):
         base_date = credit_curve.fBaseDate
         print('Date:{}, Discount Factor:{}, Survival Probability:{}'.format(self.c_interface.JpmcdsFormatDate(base_date),
